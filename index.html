@@ -160,11 +160,10 @@ function paintCourt(){
  ctx.beginPath();ctx.arc(cx,hoopY,1.25*scale,0,Math.PI);ctx.stroke();
  // Arco dei tre punti e linee d'angolo
  const threeR=6.75*scale;
- const arcStart=Math.acos((7.0*scale)/threeR);
- line(3);ctx.beginPath();ctx.arc(cx,hoopY,threeR,arcStart,Math.PI-arcStart);ctx.stroke();
- const cornerY=y0+.9*scale;
- ctx.beginPath();ctx.moveTo(x0,cornerY);ctx.lineTo(cx-threeR*Math.cos(arcStart),cornerY);
- ctx.moveTo(cx+threeR*Math.cos(arcStart),cornerY);ctx.lineTo(x1,cornerY);ctx.stroke();
+ const cornerY=y0+.9*scale,dy=hoopY-cornerY,dx=Math.sqrt(threeR*threeR-dy*dy),a=Math.asin(dy/threeR);
+ line(3);ctx.beginPath();ctx.arc(cx,hoopY,threeR,Math.PI+a,Math.PI*2-a);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(x0,cornerY);ctx.lineTo(cx-dx,cornerY);
+ ctx.moveTo(cx+dx,cornerY);ctx.lineTo(x1,cornerY);ctx.stroke();
  // Semicerchio centrale sulla linea di metà campo
  line(3);ctx.beginPath();ctx.arc(cx,y1,1.8*scale,Math.PI,Math.PI*2);ctx.stroke();
 }
