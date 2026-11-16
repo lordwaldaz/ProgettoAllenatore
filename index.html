@@ -121,42 +121,52 @@ $('addDrawingBtn').onclick=addDrawing;$('renameDrawingBtn').onclick=renameDrawin
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b))});
 function paintCourt(){
  ctx.clearRect(0,0,1000,650);
- // Lavagna tattica bianca, ispirata alle lavagne da allenatore.
+ // Mezzo campo verticale, ispirato alla lavagna caricata: solo parquet e linee.
+ const x0=78,x1=922,y0=38,y1=612,cx=500;
+ const w=x1-x0,h=y1-y0,scale=w/15;
+ const hoopY=y0+1.45*scale, laneBottom=y0+5.8*scale, cy=hoopY;
+ const wood=ctx.createLinearGradient(0,y0,0,y1);
+ wood.addColorStop(0,'#f5d99e');wood.addColorStop(.48,'#e8c486');wood.addColorStop(1,'#f2d39a');
  ctx.fillStyle='#fff';ctx.fillRect(0,0,1000,650);
- const x0=24,xm=500,x1=976,y0=70,y1=580,cy=325,s=34;
- const ink='#263746';
- function style(width=2.6){ctx.strokeStyle=ink;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round'}
- function half(x,dir,centerLine){
-  const basket=x+dir*1.575*s, lane=x+dir*5.8*s, hoop=.225*s;
-  // Perimetro della metà campo
-  style(3);ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x+dir*14*s,y0);ctx.lineTo(x+dir*14*s,y1);ctx.lineTo(x,y1);ctx.closePath();ctx.stroke();
-  // Area dei tre secondi
-  style(2.6);ctx.beginPath();ctx.moveTo(x,cy-2.45*s);ctx.lineTo(lane,cy-2.45*s);ctx.lineTo(lane,cy+2.45*s);ctx.lineTo(x,cy+2.45*s);ctx.stroke();
-  // Semicerchio del tiro libero (linea tratteggiata nella metà esterna)
-  ctx.beginPath();ctx.arc(lane,cy,1.8*s,0,Math.PI*2);ctx.stroke();
-  // Semicerchio dell'area no-charge
-  ctx.beginPath();ctx.arc(basket,cy,1.25*s,dir===1?-Math.PI/2:Math.PI/2,dir===1?Math.PI/2:Math.PI*1.5);ctx.stroke();
-  // Linea dei tre punti: arco e segmenti d'angolo
-  const r=6.75*s, cornerY=7.0*s;
-  const dx=Math.sqrt(r*r-cornerY*cornerY);
-  const cornerEnd=basket+dir*dx;
-  ctx.beginPath();
-  ctx.arc(basket,cy,r,dir===1?-1.36:Math.PI-1.36,dir===1?1.36:Math.PI+1.36);
-  ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x,y0+.9*s);ctx.lineTo(cornerEnd,y0+.9*s);ctx.moveTo(x,y1-.9*s);ctx.lineTo(cornerEnd,y1-.9*s);ctx.stroke();
-  // Tabellone e ferro
-  style(3.2);ctx.beginPath();ctx.moveTo(x+dir*1.2*s,cy-.9*s);ctx.lineTo(x+dir*1.2*s,cy+.9*s);ctx.stroke();
-  ctx.beginPath();ctx.arc(basket,cy,hoop,0,Math.PI*2);ctx.stroke();
-  // Piccola linea del ferro verso il campo
-  ctx.beginPath();ctx.moveTo(basket,cy);ctx.lineTo(basket+dir*.35*s,cy);ctx.stroke();
-  if(centerLine){style(3);ctx.beginPath();ctx.moveTo(x+dir*14*s,y0);ctx.lineTo(x+dir*14*s,y1);ctx.stroke();ctx.beginPath();ctx.arc(x+dir*14*s,cy,1.8*s,0,Math.PI*2);ctx.stroke()}
+ ctx.fillStyle=wood;ctx.fillRect(x0,y0,w,h);
+ // Tavole di parquet chiare e discrete
+ ctx.save();ctx.beginPath();ctx.rect(x0,y0,w,h);ctx.clip();
+ for(let yy=y0+12;yy<y1;yy+=42){
+  ctx.strokeStyle='rgba(130,82,35,.10)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
  }
- if(courtMode==='half'){
-  half(x0,1,true);
- }else{
-  half(x0,1,false);half(x1,-1,false);
-  style(3);ctx.beginPath();ctx.moveTo(xm,y0);ctx.lineTo(xm,y1);ctx.stroke();ctx.beginPath();ctx.arc(xm,cy,1.8*s,0,Math.PI*2);ctx.stroke();
+ for(let xx=x0+18;xx<x1;xx+=74){
+  ctx.strokeStyle='rgba(255,255,255,.17)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xx,y0);ctx.lineTo(xx,y1);ctx.stroke();
  }
+ ctx.restore();
+ const ink='#171717';
+ function line(width=2.8){ctx.strokeStyle=ink;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round'}
+ // Perimetro del mezzo campo e linea di metà campo
+ line(3);ctx.strokeRect(x0,y0,w,h);
+ // Area dei tre secondi
+ const laneW=4.9*scale, laneL=cx-laneW/2, laneR=cx+laneW/2;
+ line(2.8);ctx.beginPath();ctx.moveTo(laneL,y0);ctx.lineTo(laneL,laneBottom);ctx.lineTo(laneR,laneBottom);ctx.lineTo(laneR,y0);ctx.stroke();
+ // Tacche laterali dell'area
+ for(let i=1;i<=4;i++){
+  const yy=y0+i*.9*scale;
+  line(2);ctx.beginPath();ctx.moveTo(laneL-7,yy);ctx.lineTo(laneL,yy);ctx.moveTo(laneR,yy);ctx.lineTo(laneR+7,yy);ctx.stroke();
+ }
+ // Semicerchio del tiro libero, aperto verso il campo
+ line(2.8);ctx.beginPath();ctx.arc(cx,laneBottom,1.8*scale,0,Math.PI);ctx.stroke();
+ // Ferro e tabellone
+ const boardY=y0+.95*scale;
+ line(3);ctx.beginPath();ctx.moveTo(cx-.9*scale,boardY);ctx.lineTo(cx+.9*scale,boardY);ctx.stroke();
+ ctx.beginPath();ctx.arc(cx,hoopY,.225*scale,0,Math.PI*2);ctx.stroke();
+ // Semicerchio no-charge sotto il canestro
+ ctx.beginPath();ctx.arc(cx,hoopY,1.25*scale,0,Math.PI);ctx.stroke();
+ // Arco dei tre punti e linee d'angolo
+ const threeR=6.75*scale;
+ const arcStart=Math.acos((7.0*scale)/threeR);
+ line(3);ctx.beginPath();ctx.arc(cx,hoopY,threeR,arcStart,Math.PI-arcStart);ctx.stroke();
+ const cornerY=y0+.9*scale;
+ ctx.beginPath();ctx.moveTo(x0,cornerY);ctx.lineTo(cx-threeR*Math.cos(arcStart),cornerY);
+ ctx.moveTo(cx+threeR*Math.cos(arcStart),cornerY);ctx.lineTo(x1,cornerY);ctx.stroke();
+ // Semicerchio centrale sulla linea di metà campo
+ line(3);ctx.beginPath();ctx.arc(cx,y1,1.8*scale,Math.PI,Math.PI*2);ctx.stroke();
 }
 function arrow(x1,y1,x2,y2,color,dash=false){ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=5;ctx.setLineDash(dash?[12,9]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();let a=Math.atan2(y2-y1,x2-x1),h=19;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.5),y2-h*Math.sin(a-.5));ctx.lineTo(x2-h*Math.cos(a+.5),y2-h*Math.sin(a+.5));ctx.closePath();ctx.fill();ctx.restore()}
 function draw(){paintCourt();items.forEach((it,i)=>{ctx.save();if(it.type==='O'||it.type==='X'){ctx.beginPath();ctx.arc(it.x,it.y,23,0,Math.PI*2);ctx.fillStyle=it.type==='O'?'#1378c8':'#c73535';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 21px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.label||'1',it.x,it.y)}else if(it.type==='ball'){ctx.beginPath();ctx.arc(it.x,it.y,15,0,Math.PI*2);ctx.fillStyle='#ef8b2c';ctx.fill();ctx.strokeStyle='#3b2818';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.moveTo(it.x-13,it.y);ctx.lineTo(it.x+13,it.y);ctx.moveTo(it.x,it.y-13);ctx.lineTo(it.x,it.y+13);ctx.stroke()}else if(it.type==='cone'){ctx.fillStyle='#ef6b24';ctx.beginPath();ctx.moveTo(it.x,it.y-22);ctx.lineTo(it.x-19,it.y+17);ctx.lineTo(it.x+19,it.y+17);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.stroke()}else if(['pass','move','dribble'].includes(it.type)){let col=it.type==='pass'?'#1769aa':it.type==='move'?'#d69b00':'#16865b';arrow(it.x,it.y,it.x2,it.y2,col,it.type==='pass');if(it.type==='dribble'){ctx.fillStyle=col;ctx.font='bold 20px Arial';ctx.fillText('〰',(it.x+it.x2)/2,(it.y+it.y2)/2-9)}}else if(it.type==='text'){ctx.fillStyle='#172536';ctx.font='bold 21px Arial';ctx.fillText(it.text||'Testo',it.x,it.y)}if(selected===i){ctx.strokeStyle='#ffe500';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(it.x,it.y,30,0,Math.PI*2);ctx.stroke()}ctx.restore()})}
