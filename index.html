@@ -33,6 +33,7 @@ footer{max-width:1550px;margin:0 auto;padding:0 14px 18px;color:var(--muted);fon
  <div class="brand">🏀 BASKET <span>COACH</span> <span class="sub">| STAFF PLANNER</span></div>
  <div class="actions" id="headerActions" hidden>
   <span class="status" id="cloudStatus">● Non connesso</span>
+  <button class="dark" id="clearAllExercisesBtn">Rimuovi esercizi di prova</button>
   <button class="dark" id="refreshBtn">Aggiorna archivio</button>
   <button class="dark" id="logoutBtn">Esci</button>
  </div>
@@ -139,6 +140,22 @@ $('addDrill').onclick=addDrill;
 $('duplicateBtn').onclick=()=>{let payload=collect();payload.title+=' — copia';activeId=null;$('sessionTitle').value=payload.title;dirty=true;$('saveMsg').textContent='Copia pronta: salva nel cloud per creare una nuova scheda.'};
 $('saveCloudBtn').onclick=async()=>{let payload=collect();$('saveCloudBtn').disabled=true;setStatus('Salvataggio…');let result;if(activeId)result=await db.from('training_sheets').update({title:payload.title,session_date:payload.session_date,team:payload.team,duration:payload.duration,goal:payload.goal,court_mode:payload.court_mode,payload,updated_at:new Date().toISOString()}).eq('id',activeId).select().single();else result=await db.from('training_sheets').insert({...payload,payload,created_by:user.id}).select().single();$('saveCloudBtn').disabled=false;if(result.error){setStatus('Errore salvataggio');$('saveMsg').textContent='Salvataggio non riuscito: '+result.error.message;return}activeId=result.data.id;dirty=false;$('saveMsg').textContent='Salvata e condivisa con lo staff.';await loadSheets();setStatus('Salvato nel cloud',true)};
 $('refreshBtn').onclick=loadSheets;
+$('clearAllExercisesBtn').onclick=async()=>{
+ if(!confirm('Confermi di rimuovere TUTTI gli esercizi e i relativi disegni da TUTTE le schede salvate? Date, squadre, titoli e obiettivi resteranno.'))return;
+ const btn=$('clearAllExercisesBtn');btn.disabled=true;btn.textContent='Pulizia in corso…';
+ try{
+  for(const s of sheets){
+   const p={...(s.payload||{}),drills:[]};
+   const {error}=await db.from('training_sheets').update({payload:p,updated_at:new Date().toISOString()}).eq('id',s.id);
+   if(error)throw error;
+  }
+  dirty=false;await loadSheets();
+  if(sheets.length)fill(sheets.find(s=>s.id===activeId)||sheets[0]);
+  $('saveMsg').textContent='Pulizia completata: esercizi e disegni rimossi da tutte le schede.';
+ }catch(e){
+  $('saveMsg').textContent='Pulizia interrotta: '+(e.message||'errore sconosciuto')+'. Aggiorna l’archivio e riprova.';
+ }finally{btn.disabled=false;btn.textContent='Rimuovi esercizi di prova'}
+};
 $('logoutBtn').onclick=async()=>{await db.auth.signOut();$('app').hidden=true;$('headerActions').hidden=true;$('authPanel').hidden=false};
 async function startSession(session){user=session.user;$('authPanel').hidden=true;$('app').hidden=false;$('headerActions').hidden=false;setStatus('Accesso effettuato',true);await loadSheets();if(sheets.length)fill(sheets[0]);else $('newBtn').click()}
 async function init(){if(!window.BASKET_COACH_CONFIG||!BASKET_COACH_CONFIG.url||!BASKET_COACH_CONFIG.anonKey){$('authMsg').textContent='Configurazione mancante: apri config.js e inserisci URL e chiave anon del progetto Supabase.';$('loginBtn').disabled=true;return}db=window.supabase.createClient(BASKET_COACH_CONFIG.url,BASKET_COACH_CONFIG.anonKey);$('loginBtn').onclick=async()=>{let {data,error}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});$('authMsg').textContent=error?error.message:'Accesso effettuato.';if(!error)await startSession(data)};let {data}=await db.auth.getSession();if(data.session)await startSession(data.session);db.auth.onAuthStateChange((_event,session)=>{if(!session){$('app').hidden=true;$('headerActions').hidden=true;$('authPanel').hidden=false}})}
