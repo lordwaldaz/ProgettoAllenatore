@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Basket Coach — Staff</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#13243a;--blue:#1769aa;--orange:#ef8b2c;--paper:#fff;--bg:#eef2f6;--line:#d8e0e8;--muted:#687789}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial;color:#172536}
+header{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-size:20px;font-weight:850}.brand span{color:#ffad55}.sub{font-size:11px;color:#c5d0dc;font-weight:500}
+.actions,.toolbar{display:flex;gap:7px;flex-wrap:wrap}
+button,.filebtn{border:0;border-radius:8px;padding:9px 12px;background:#e9eef4;color:#172536;font-weight:650;cursor:pointer;font-size:13px}
+button.primary{background:var(--orange);color:#241605}button.dark{background:#29415c;color:white}button.active{background:#1769aa;color:#fff}button:disabled{opacity:.45;cursor:not-allowed}
+main{max-width:1550px;margin:16px auto;padding:0 14px;display:grid;grid-template-columns:minmax(280px,350px) minmax(420px,1fr);gap:14px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:15px;box-shadow:0 2px 8px #15283c0a;min-width:0}
+h2{font-size:16px;margin:0 0 12px;color:var(--navy)}h3{font-size:14px;margin:15px 0 8px;color:var(--navy)}
+label{display:block;font-size:12px;font-weight:700;color:#536276;margin:9px 0 4px}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:7px;padding:9px;font:inherit;color:#172536;background:#fff}textarea{resize:vertical;min-height:75px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hint{font-size:12px;color:var(--muted);margin:7px 0}
+.drillhead{display:flex;justify-content:space-between;align-items:center;gap:8px}.drilllist{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}.drilltab{background:#edf1f5}.drilltab.sel{background:#dcecff;color:#0c4d82}
+.canvaswrap{background:#e8edf2;border-radius:10px;padding:10px;overflow:hidden}.court{width:100%;height:auto;display:block;background:#d9a66e;border-radius:4px;touch-action:none;cursor:crosshair}
+.editor{display:grid;grid-template-columns:minmax(300px,1.1fr) minmax(300px,.9fr);gap:14px;align-items:start}.editor.stacked{grid-template-columns:1fr}.editor.stacked .drawing{order:0}.editor.stacked .details{order:1}
+.toolbar button{padding:8px 9px}.toolbar{margin:8px 0}
+.status{font-size:12px;color:#cbd6e2;margin-left:auto}.status b{color:#9ee0b0}.auth{max-width:440px;margin:8vh auto;padding:22px}.auth h1{margin:0 0 6px}.hidden{display:none!important}.topline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+footer{max-width:1550px;margin:0 auto;padding:0 14px 18px;color:var(--muted);font-size:12px}
+@media(max-width:950px){main{grid-template-columns:1fr}.editor{grid-template-columns:1fr}}
+@media print{header,.no-print,footer{display:none!important}body{background:#fff}main{display:block;margin:0;padding:0}.panel{box-shadow:none;border:0;padding:8px}.editor{display:grid!important;grid-template-columns:1fr 1fr!important}.canvaswrap{padding:0;background:#fff}.court{max-height:430px}input,textarea{border:0;padding:2px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">🏀 BASKET <span>COACH</span> <span class="sub">| STAFF PLANNER</span></div>
+ <div class="actions" id="headerActions" hidden>
+  <span class="status" id="cloudStatus">● Non connesso</span>
+  <button class="dark" id="refreshBtn">Aggiorna archivio</button>
+  <button class="dark" id="logoutBtn">Esci</button>
+ </div>
+</header>
+<section class="panel auth" id="authPanel">
+ <h1>Accesso staff</h1><p class="hint">Accedi con l'indirizzo email e la password forniti dall'amministratore della società.</p>
+ <label>Email</label><input id="email" type="email" autocomplete="username" placeholder="allenatore@societa.it">
+ <label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Password">
+ <button class="primary" id="loginBtn" style="width:100%;margin-top:14px">Accedi</button>
+ <p id="authMsg" class="hint"></p>
+ <p class="hint">Gli account vengono creati dall'amministratore: la registrazione pubblica non è prevista.</p>
+</section>
+<div id="app" hidden>
+<main>
+<section class="panel">
+ <div class="topline"><h2 style="margin:0">Archivio allenamenti</h2><button class="primary no-print" id="newBtn">+ Nuovo</button></div>
+ <label>Cerca nell'archivio</label><input id="search" placeholder="Titolo, squadra o data...">
+ <div id="sheetList" style="margin-top:8px;display:grid;gap:6px"></div>
+ <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+ <h2>Dati allenamento</h2>
+ <div class="grid2"><div><label>Data</label><input id="date" type="date"></div><div><label>Squadra / categoria</label><input id="team" placeholder="Es. U15"></div></div>
+ <label>Titolo allenamento</label><input id="sessionTitle" placeholder="Es. Collaborazioni offensive">
+ <div class="grid2"><div><label>Durata totale (min)</label><input id="duration" type="number" min="0"></div><div><label>Obiettivo principale</label><input id="goal" placeholder="Es. Spaziature"></div></div>
+ <div class="drillhead"><h3>Esercizi</h3><button class="no-print" id="addDrill">+ Esercizio</button></div>
+ <div class="drilllist" id="drillTabs"></div>
+ <label>Nome esercizio</label><input id="drillName" placeholder="Nome esercizio">
+ <div class="grid2"><div><label>Durata (min)</label><input id="drillDuration" type="number" min="0"></div><div><label>Serie / ripetizioni</label><input id="reps" placeholder="3 x 5"></div></div>
+ <label>Obiettivo tecnico-tattico</label><input id="drillGoal" placeholder="Es. Passaggio e taglio">
+ <label>Descrizione e organizzazione</label><textarea id="description" placeholder="Disposizione, svolgimento, regole e rotazioni..."></textarea>
+ <label>Varianti / correzioni</label><textarea id="notes" placeholder="Varianti, errori da correggere, punti chiave..."></textarea>
+ <div class="actions no-print" style="margin-top:14px">
+  <button class="primary" id="saveCloudBtn">Salva nel cloud</button><button id="duplicateBtn">Duplica scheda</button><button onclick="window.print()">Stampa / PDF</button>
+ </div>
+ <p class="hint" id="saveMsg">Le schede salvate sono condivise con gli account dello staff autorizzati.</p>
+</section>
+<section class="panel">
+ <div class="topline"><h2 style="margin:0">Lavagna esercizio</h2><div class="actions no-print"><button id="sideBtn" class="active">Affiancato</button><button id="stackBtn">Verticale</button></div></div>
+ <div class="editor" id="editor">
+  <div class="drawing">
+   <div class="toolbar no-print" id="tools">
+    <button class="active" data-tool="select">↖ Seleziona</button><button data-tool="O">＋ Attacco</button><button data-tool="X">＋ Difesa</button><button data-tool="ball">🏀 Palla</button><button data-tool="cone">▲ Cono</button>
+    <button data-tool="pass">⇢ Passaggio</button><button data-tool="move">➜ Movimento</button><button data-tool="dribble">〰 Palleggio</button><button data-tool="text">T Testo</button><button data-tool="erase">⌫ Gomma</button>
+   </div>
+   <div class="toolbar no-print"><button id="halfBtn" class="active">Mezzo campo</button><button id="fullBtn">Campo intero</button><button id="undoBtn">↶ Annulla</button><button id="clearBtn">Pulisci</button></div>
+   <div class="canvaswrap"><canvas id="court" class="court" width="1000" height="650"></canvas></div>
+   <p class="hint no-print">Scegli uno strumento e clicca sul campo. Con “Seleziona” puoi trascinare gli elementi. Per le frecce trascina dal punto iniziale a quello finale.</p>
+  </div>
+  <div class="details">
+   <h3 style="margin-top:4px">Legenda</h3><p class="hint">🔵 Attacco · ❌ Difesa · 🏀 Pallone · ▲ Cono · Freccia tratteggiata: passaggio · Freccia continua: movimento</p>
+   <h3>Condivisione</h3><p class="hint">Ogni scheda salvata nel cloud è visibile a tutti gli utenti autorizzati del workspace staff. Le modifiche diventano condivise dopo aver premuto “Salva nel cloud”.</p>
+  </div>
+ </div>
+</section>
+</main>
+</div>
+<footer>Basket Coach · Le credenziali e i dati sono gestiti dal progetto Supabase configurato dalla società.</footer>
+<script src="./config.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let db=null,user=null,sheets=[],activeId=null,drills=[],current=0,items=[],tool='select',courtMode='half',undoStack=[],drag=null,selected=null,dirty=false;
+const canvas=$('court'),ctx=canvas.getContext('2d');
+function setStatus(t,ok=false){$('cloudStatus').innerHTML=(ok?'● ':'● ')+t;$('cloudStatus').style.color=ok?'#9ee0b0':'#ffd08a'}
+function blank(){return {name:'Nuovo esercizio',duration:'10',reps:'',goal:'',description:'',notes:'',items:[]}}
+function snapshot(){undoStack.push(JSON.stringify(items));if(undoStack.length>40)undoStack.shift()}
+function markDirty(){dirty=true;$('saveMsg').textContent='Modifiche non ancora salvate nel cloud.'}
+function saveCurrent(){if(!drills.length)return;let d=drills[current];d.name=$('drillName').value;d.duration=$('drillDuration').value;d.reps=$('reps').value;d.goal=$('drillGoal').value;d.description=$('description').value;d.notes=$('notes').value;d.items=items.map(x=>({...x}))}
+function renderTabs(){let el=$('drillTabs');el.innerHTML='';drills.forEach((d,i)=>{let b=document.createElement('button');b.className='drilltab'+(i===current?' sel':'');b.textContent=(i+1)+'. '+(d.name||'Esercizio');b.onclick=()=>{saveCurrent();current=i;loadCurrent();markDirty()};el.appendChild(b)})}
+function loadCurrent(){let d=drills[current];$('drillName').value=d.name||'';$('drillDuration').value=d.duration||'';$('reps').value=d.reps||'';$('drillGoal').value=d.goal||'';$('description').value=d.description||'';$('notes').value=d.notes||'';items=(d.items||[]).map(x=>({...x}));undoStack=[];draw();renderTabs()}
+function addDrill(){saveCurrent();drills.push(blank());current=drills.length-1;loadCurrent();markDirty()}
+['drillName','drillDuration','reps','drillGoal','description','notes'].forEach(id=>$(id).addEventListener('input',()=>{saveCurrent();renderTabs();markDirty()}));
+['date','team','sessionTitle','duration','goal'].forEach(id=>$(id).addEventListener('input',markDirty));
+$('addDrill').onclick=addDrill;
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b))});
+function paintCourt(){ctx.clearRect(0,0,1000,650);ctx.fillStyle='#d9a66e';ctx.fillRect(0,0,1000,650);ctx.strokeStyle='#fff';ctx.lineWidth=5;ctx.strokeRect(18,18,964,614);ctx.beginPath();ctx.moveTo(18,325);ctx.lineTo(982,325);ctx.stroke();ctx.beginPath();ctx.arc(500,325,75,0,Math.PI*2);ctx.stroke();[18,982].forEach((x,i)=>{let bx=x+(i===0?105:-105);ctx.beginPath();ctx.moveTo(bx,225);ctx.lineTo(bx,425);ctx.lineTo(x,425);ctx.moveTo(bx,225);ctx.lineTo(x,225);ctx.stroke();ctx.beginPath();ctx.arc(x,325,230,i===0?-Math.PI/2:Math.PI/2,i===0?Math.PI/2:Math.PI*1.5);ctx.stroke();ctx.beginPath();ctx.arc(bx,325,60,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(x,290);ctx.lineTo(x,360);ctx.stroke()});if(courtMode==='half'){ctx.fillStyle='#d9a66e';ctx.fillRect(502,20,480,610);ctx.strokeStyle='#fff';ctx.beginPath();ctx.moveTo(502,18);ctx.lineTo(502,632);ctx.stroke();ctx.beginPath();ctx.arc(18,325,230,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.beginPath();ctx.arc(123,325,60,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(18,290);ctx.lineTo(18,360);ctx.stroke()}}
+function arrow(x1,y1,x2,y2,color,dash=false){ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=5;ctx.setLineDash(dash?[12,9]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();let a=Math.atan2(y2-y1,x2-x1),h=19;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.5),y2-h*Math.sin(a-.5));ctx.lineTo(x2-h*Math.cos(a+.5),y2-h*Math.sin(a+.5));ctx.closePath();ctx.fill();ctx.restore()}
+function draw(){paintCourt();items.forEach((it,i)=>{ctx.save();if(it.type==='O'||it.type==='X'){ctx.beginPath();ctx.arc(it.x,it.y,23,0,Math.PI*2);ctx.fillStyle=it.type==='O'?'#1378c8':'#c73535';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 21px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.label||'1',it.x,it.y)}else if(it.type==='ball'){ctx.beginPath();ctx.arc(it.x,it.y,15,0,Math.PI*2);ctx.fillStyle='#ef8b2c';ctx.fill();ctx.strokeStyle='#3b2818';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.moveTo(it.x-13,it.y);ctx.lineTo(it.x+13,it.y);ctx.moveTo(it.x,it.y-13);ctx.lineTo(it.x,it.y+13);ctx.stroke()}else if(it.type==='cone'){ctx.fillStyle='#ef6b24';ctx.beginPath();ctx.moveTo(it.x,it.y-22);ctx.lineTo(it.x-19,it.y+17);ctx.lineTo(it.x+19,it.y+17);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.stroke()}else if(['pass','move','dribble'].includes(it.type)){let col=it.type==='pass'?'#fff':it.type==='move'?'#ffe500':'#22a06b';arrow(it.x,it.y,it.x2,it.y2,col,it.type==='pass');if(it.type==='dribble'){ctx.fillStyle=col;ctx.font='bold 20px Arial';ctx.fillText('〰',(it.x+it.x2)/2,(it.y+it.y2)/2-9)}}else if(it.type==='text'){ctx.fillStyle='#172536';ctx.font='bold 21px Arial';ctx.fillText(it.text||'Testo',it.x,it.y)}if(selected===i){ctx.strokeStyle='#ffe500';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(it.x,it.y,30,0,Math.PI*2);ctx.stroke()}ctx.restore()})}
+function pos(e){let r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
+function hit(p){for(let i=items.length-1;i>=0;i--){let a=items[i];if(Math.hypot(p.x-a.x,p.y-a.y)<32)return i;if(a.x2&&Math.hypot(p.x-(a.x+a.x2)/2,p.y-(a.y+a.y2)/2)<25)return i}return -1}
+canvas.addEventListener('pointerdown',e=>{let p=pos(e);canvas.setPointerCapture(e.pointerId);if(tool==='select'){selected=hit(p);if(selected>=0){snapshot();drag={kind:'move',i:selected,dx:p.x-items[selected].x,dy:p.y-items[selected].y}}draw();return}if(tool==='erase'){let i=hit(p);if(i>=0){snapshot();items.splice(i,1);markDirty()}draw();return}if(['pass','move','dribble'].includes(tool)){snapshot();drag={kind:'line',x:p.x,y:p.y};return}if(tool==='text'){let t=prompt('Testo da inserire nel campo:','');if(t){snapshot();items.push({type:'text',x:p.x,y:p.y,text:t});markDirty()}draw();return}snapshot();let label='';if(tool==='O'||tool==='X')label=String(items.filter(x=>x.type===tool).length+1);items.push({type:tool,x:p.x,y:p.y,label});selected=items.length-1;markDirty();draw()});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;let p=pos(e);if(drag.kind==='move'){items[drag.i].x=p.x-drag.dx;items[drag.i].y=p.y-drag.dy;draw()}else{draw();arrow(drag.x,drag.y,p.x,p.y,tool==='pass'?'#fff':tool==='move'?'#ffe500':'#22a06b',tool==='pass')}});
+canvas.addEventListener('pointerup',e=>{if(!drag)return;let p=pos(e);if(drag.kind==='line'){items.push({type:tool,x:drag.x,y:drag.y,x2:p.x,y2:p.y});markDirty()}else markDirty();drag=null;draw()});
+$('halfBtn').onclick=()=>{courtMode='half';$('halfBtn').classList.add('active');$('fullBtn').classList.remove('active');draw();markDirty()};
+$('fullBtn').onclick=()=>{courtMode='full';$('fullBtn').classList.add('active');$('halfBtn').classList.remove('active');draw();markDirty()};
+$('undoBtn').onclick=()=>{if(undoStack.length){items=JSON.parse(undoStack.pop());selected=null;draw();markDirty()}};
+$('clearBtn').onclick=()=>{if(confirm('Cancellare tutti gli elementi del disegno?')){snapshot();items=[];draw();markDirty()}};
+$('sideBtn').onclick=()=>{ $('editor').classList.remove('stacked');$('sideBtn').classList.add('active');$('stackBtn').classList.remove('active')};
+$('stackBtn').onclick=()=>{ $('editor').classList.add('stacked');$('stackBtn').classList.add('active');$('sideBtn').classList.remove('active')};
+function collect(){saveCurrent();return {title:$('sessionTitle').value||'Allenamento senza titolo',session_date:$('date').value||null,team:$('team').value,duration:Number($('duration').value)||null,goal:$('goal').value,drills,court_mode:courtMode,updated_at:new Date().toISOString()}}
+function fill(row){let p=row.payload||{};$('date').value=row.session_date||'';$('team').value=row.team||'';$('sessionTitle').value=row.title||'';$('duration').value=row.duration||'';$('goal').value=row.goal||'';drills=Array.isArray(p.drills)&&p.drills.length?p.drills:[blank()];courtMode=p.court_mode||'half';current=0;activeId=row.id;loadCurrent();$('halfBtn').classList.toggle('active',courtMode==='half');$('fullBtn').classList.toggle('active',courtMode==='full');dirty=false;$('saveMsg').textContent='Scheda caricata dal cloud.'}
+async function loadSheets(){setStatus('Sincronizzazione…');let {data,error}=await db.from('training_sheets').select('*').order('updated_at',{ascending:false});if(error){setStatus('Errore archivio');$('saveMsg').textContent=error.message;return} sheets=data||[];renderSheets();setStatus('Cloud sincronizzato',true)}
+function renderSheets(){let q=$('search').value.toLowerCase(),el=$('sheetList');el.innerHTML='';let filtered=sheets.filter(s=>(s.title+' '+(s.team||'')+' '+(s.session_date||'')).toLowerCase().includes(q));if(!filtered.length){el.innerHTML='<p class="hint">Nessuna scheda trovata. Crea il primo allenamento.</p>';return}filtered.forEach(s=>{let b=document.createElement('button');b.style.textAlign='left';b.style.background=s.id===activeId?'#dcecff':'#f0f3f6';b.innerHTML='<strong></strong><br><small></small>';b.querySelector('strong').textContent=s.title;b.querySelector('small').textContent=[s.team,s.session_date].filter(Boolean).join(' · ');b.onclick=()=>{if(dirty&&!confirm('Ci sono modifiche non salvate. Vuoi aprire un’altra scheda?'))return;fill(s)};el.appendChild(b)})}
+$('search').oninput=renderSheets;
+$('newBtn').onclick=()=>{if(dirty&&!confirm('Le modifiche non salvate andranno perse. Continuare?'))return;activeId=null;drills=[blank()];current=0;courtMode='half';$('date').value=new Date().toISOString().slice(0,10);$('team').value='';$('sessionTitle').value='';$('duration').value='';$('goal').value='';loadCurrent();dirty=false;$('saveMsg').textContent='Nuova scheda: salva nel cloud per condividerla.'};
+$('addDrill').onclick=addDrill;
+$('duplicateBtn').onclick=()=>{let payload=collect();payload.title+=' — copia';activeId=null;$('sessionTitle').value=payload.title;dirty=true;$('saveMsg').textContent='Copia pronta: salva nel cloud per creare una nuova scheda.'};
+$('saveCloudBtn').onclick=async()=>{let payload=collect();$('saveCloudBtn').disabled=true;setStatus('Salvataggio…');let result;if(activeId)result=await db.from('training_sheets').update({title:payload.title,session_date:payload.session_date,team:payload.team,duration:payload.duration,goal:payload.goal,court_mode:payload.court_mode,payload,updated_at:new Date().toISOString()}).eq('id',activeId).select().single();else result=await db.from('training_sheets').insert({...payload,payload,created_by:user.id}).select().single();$('saveCloudBtn').disabled=false;if(result.error){setStatus('Errore salvataggio');$('saveMsg').textContent='Salvataggio non riuscito: '+result.error.message;return}activeId=result.data.id;dirty=false;$('saveMsg').textContent='Salvata e condivisa con lo staff.';await loadSheets();setStatus('Salvato nel cloud',true)};
+$('refreshBtn').onclick=loadSheets;
+$('logoutBtn').onclick=async()=>{await db.auth.signOut();$('app').hidden=true;$('headerActions').hidden=true;$('authPanel').hidden=false};
+async function startSession(session){user=session.user;$('authPanel').hidden=true;$('app').hidden=false;$('headerActions').hidden=false;setStatus('Accesso effettuato',true);await loadSheets();if(sheets.length)fill(sheets[0]);else $('newBtn').click()}
+async function init(){if(!window.BASKET_COACH_CONFIG||!BASKET_COACH_CONFIG.url||!BASKET_COACH_CONFIG.anonKey){$('authMsg').textContent='Configurazione mancante: apri config.js e inserisci URL e chiave anon del progetto Supabase.';$('loginBtn').disabled=true;return}db=window.supabase.createClient(BASKET_COACH_CONFIG.url,BASKET_COACH_CONFIG.anonKey);$('loginBtn').onclick=async()=>{let {data,error}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});$('authMsg').textContent=error?error.message:'Accesso effettuato.';if(!error)await startSession(data)};let {data}=await db.auth.getSession();if(data.session)await startSession(data.session);db.auth.onAuthStateChange((_event,session)=>{if(!session){$('app').hidden=true;$('headerActions').hidden=true;$('authPanel').hidden=false}})}
+init();
+</script>
+</body></html>
