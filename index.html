@@ -80,7 +80,7 @@ footer{max-width:1550px;margin:0 auto;padding:0 14px 18px;color:var(--muted);fon
    </div>
    <div class="toolbar no-print"><button id="halfBtn" class="active">Mezzo campo</button><button id="fullBtn">Campo intero</button><button id="undoBtn">↶ Annulla</button><button id="clearBtn">Pulisci</button></div>
    <div class="drawing-manager no-print"><strong>Disegni di questo esercizio</strong><div id="drawingTabs" class="drilllist"></div><div class="toolbar"><button id="addDrawingBtn" class="primary">+ Aggiungi disegno</button><button id="renameDrawingBtn">Rinomina</button><button id="duplicateDrawingBtn">Duplica</button><button id="deleteDrawingBtn">Elimina</button></div><p class="hint">Puoi creare più fasi, ad esempio: posizione iniziale, sviluppo dell'azione e conclusione.</p></div>
-   <div class="canvaswrap"><canvas id="court" class="court" width="1000" height="650"></canvas></div>
+   <div class="canvaswrap"><canvas id="court" class="court" width="650" height="1000"></canvas></div>
    <p class="hint no-print">Scegli uno strumento e clicca sul campo. Con “Seleziona” puoi trascinare gli elementi. Per le frecce trascina dal punto iniziale a quello finale.</p>
   </div>
   <div class="details">
@@ -120,52 +120,61 @@ $('addDrill').onclick=addDrill;
 $('addDrawingBtn').onclick=addDrawing;$('renameDrawingBtn').onclick=renameDrawing;$('duplicateDrawingBtn').onclick=duplicateDrawing;$('deleteDrawingBtn').onclick=deleteDrawing;
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b))});
 function paintCourt(){
- ctx.clearRect(0,0,1000,650);
- // Mezzo campo verticale, ispirato alla lavagna caricata: solo parquet e linee.
- const x0=78,x1=922,y0=38,y1=612,cx=500;
- const w=x1-x0,h=y1-y0,scale=w/15;
- const hoopY=y0+1.45*scale, laneBottom=y0+5.8*scale, cy=hoopY;
+ ctx.clearRect(0,0,650,1000);
+ const x0=12,x1=638,y0=12,y1=988,cx=325,mid=500;
+ const sx=(x1-x0)/15,sy=(y1-y0)/28;
  const wood=ctx.createLinearGradient(0,y0,0,y1);
- wood.addColorStop(0,'#f5d99e');wood.addColorStop(.48,'#e8c486');wood.addColorStop(1,'#f2d39a');
- ctx.fillStyle='#fff';ctx.fillRect(0,0,1000,650);
- ctx.fillStyle=wood;ctx.fillRect(x0,y0,w,h);
- // Tavole di parquet chiare e discrete
- ctx.save();ctx.beginPath();ctx.rect(x0,y0,w,h);ctx.clip();
- for(let yy=y0+12;yy<y1;yy+=42){
-  ctx.strokeStyle='rgba(130,82,35,.10)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
+ wood.addColorStop(0,'#f6dcae');wood.addColorStop(.5,'#e9c995');wood.addColorStop(1,'#f5d9a5');
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,650,1000);
+ ctx.fillStyle=wood;ctx.fillRect(x0,y0,x1-x0,y1-y0);
+ // Parquet a listelli verticali, come nel riferimento
+ ctx.save();ctx.beginPath();ctx.rect(x0,y0,x1-x0,y1-y0);ctx.clip();
+ for(let xx=x0+8;xx<x1;xx+=18){
+  ctx.fillStyle=(Math.floor((xx-x0)/18)%2===0)?'rgba(255,255,255,.12)':'rgba(130,83,40,.035)';
+  ctx.fillRect(xx,y0,9,y1-y0);
  }
- for(let xx=x0+18;xx<x1;xx+=74){
-  ctx.strokeStyle='rgba(255,255,255,.17)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xx,y0);ctx.lineTo(xx,y1);ctx.stroke();
+ for(let yy=y0+24;yy<y1;yy+=48){
+  ctx.strokeStyle='rgba(133,91,48,.10)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
  }
  ctx.restore();
- const ink='#171717';
- function line(width=2.8){ctx.strokeStyle=ink;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round'}
- // Perimetro del mezzo campo e linea di metà campo
- line(3);ctx.strokeRect(x0,y0,w,h);
- // Area dei tre secondi
- const laneW=4.9*scale, laneL=cx-laneW/2, laneR=cx+laneW/2;
- line(2.8);ctx.beginPath();ctx.moveTo(laneL,y0);ctx.lineTo(laneL,laneBottom);ctx.lineTo(laneR,laneBottom);ctx.lineTo(laneR,y0);ctx.stroke();
- // Tacche laterali dell'area
- for(let i=1;i<=4;i++){
-  const yy=y0+i*.9*scale;
-  line(2);ctx.beginPath();ctx.moveTo(laneL-7,yy);ctx.lineTo(laneL,yy);ctx.moveTo(laneR,yy);ctx.lineTo(laneR+7,yy);ctx.stroke();
+ const white='#fff';
+ function line(width=3){ctx.strokeStyle=white;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round'}
+ // Perimetro e linea di metà campo
+ line(5);ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+ ctx.beginPath();ctx.moveTo(x0,mid);ctx.lineTo(x1,mid);ctx.stroke();
+ ctx.beginPath();ctx.arc(cx,mid,1.8*sx,0,Math.PI*2);ctx.stroke();
+ function end(top){
+  const by=top?y0:y1, dir=top?1:-1, hoopY=by+dir*1.55*sy;
+  const laneW=4.9*sx, laneL=cx-laneW/2, laneR=cx+laneW/2;
+  const laneEnd=by+dir*5.8*sy;
+  // Area colorata
+  ctx.fillStyle='#0876c9';ctx.fillRect(laneL,Math.min(by,laneEnd),laneW,Math.abs(laneEnd-by));
+  line(4);ctx.strokeRect(laneL,Math.min(by,laneEnd),laneW,Math.abs(laneEnd-by));
+  // Linea del tiro libero e semicerchio
+  ctx.beginPath();ctx.arc(cx,laneEnd,1.8*sy,top?0:Math.PI,top?Math.PI:Math.PI*2);ctx.stroke();
+  // Ferro, tabellone e semicerchio sotto canestro
+  const boardY=by+dir*.95*sy;
+  ctx.beginPath();ctx.moveTo(cx-.9*sx,boardY);ctx.lineTo(cx+.9*sx,boardY);ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,hoopY,.225*sx,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,hoopY,1.25*sy,top?0:Math.PI,top?Math.PI:Math.PI*2);ctx.stroke();
+  // Arco dei tre punti con raccordi laterali
+  const r=6.75*sy, cornerY=by+dir*.9*sy;
+  const dy=Math.abs(cornerY-hoopY), dx=Math.sqrt(Math.max(0,r*r-dy*dy));
+  const angle=Math.asin(dy/r);
+  ctx.beginPath();
+  if(top)ctx.arc(cx,hoopY,r,angle,Math.PI-angle);
+  else ctx.arc(cx,hoopY,r,Math.PI+angle,Math.PI*2-angle);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x0,cornerY);ctx.lineTo(cx-dx,cornerY);
+  ctx.moveTo(cx+dx,cornerY);ctx.lineTo(x1,cornerY);ctx.stroke();
+  // Tacche laterali dell'area
+  for(let i=1;i<=4;i++){
+   const yy=by+dir*i*.9*sy;
+   ctx.beginPath();ctx.moveTo(laneL-7,yy);ctx.lineTo(laneL,yy);ctx.moveTo(laneR,yy);ctx.lineTo(laneR+7,yy);ctx.stroke();
+  }
  }
- // Semicerchio del tiro libero, aperto verso il campo
- line(2.8);ctx.beginPath();ctx.arc(cx,laneBottom,1.8*scale,0,Math.PI);ctx.stroke();
- // Ferro e tabellone
- const boardY=y0+.95*scale;
- line(3);ctx.beginPath();ctx.moveTo(cx-.9*scale,boardY);ctx.lineTo(cx+.9*scale,boardY);ctx.stroke();
- ctx.beginPath();ctx.arc(cx,hoopY,.225*scale,0,Math.PI*2);ctx.stroke();
- // Semicerchio no-charge sotto il canestro
- ctx.beginPath();ctx.arc(cx,hoopY,1.25*scale,0,Math.PI);ctx.stroke();
- // Arco dei tre punti e linee d'angolo
- const threeR=6.75*scale;
- const cornerY=y0+.9*scale,dy=hoopY-cornerY,dx=Math.sqrt(threeR*threeR-dy*dy),a=Math.asin(dy/threeR);
- line(3);ctx.beginPath();ctx.arc(cx,hoopY,threeR,Math.PI+a,Math.PI*2-a);ctx.stroke();
- ctx.beginPath();ctx.moveTo(x0,cornerY);ctx.lineTo(cx-dx,cornerY);
- ctx.moveTo(cx+dx,cornerY);ctx.lineTo(x1,cornerY);ctx.stroke();
- // Semicerchio centrale sulla linea di metà campo
- line(3);ctx.beginPath();ctx.arc(cx,y1,1.8*scale,Math.PI,Math.PI*2);ctx.stroke();
+ end(true);end(false);
 }
 function arrow(x1,y1,x2,y2,color,dash=false){ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=5;ctx.setLineDash(dash?[12,9]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();let a=Math.atan2(y2-y1,x2-x1),h=19;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.5),y2-h*Math.sin(a-.5));ctx.lineTo(x2-h*Math.cos(a+.5),y2-h*Math.sin(a+.5));ctx.closePath();ctx.fill();ctx.restore()}
 function draw(){paintCourt();items.forEach((it,i)=>{ctx.save();if(it.type==='O'||it.type==='X'){ctx.beginPath();ctx.arc(it.x,it.y,23,0,Math.PI*2);ctx.fillStyle=it.type==='O'?'#1378c8':'#c73535';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 21px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.label||'1',it.x,it.y)}else if(it.type==='ball'){ctx.beginPath();ctx.arc(it.x,it.y,15,0,Math.PI*2);ctx.fillStyle='#ef8b2c';ctx.fill();ctx.strokeStyle='#3b2818';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.moveTo(it.x-13,it.y);ctx.lineTo(it.x+13,it.y);ctx.moveTo(it.x,it.y-13);ctx.lineTo(it.x,it.y+13);ctx.stroke()}else if(it.type==='cone'){ctx.fillStyle='#ef6b24';ctx.beginPath();ctx.moveTo(it.x,it.y-22);ctx.lineTo(it.x-19,it.y+17);ctx.lineTo(it.x+19,it.y+17);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.stroke()}else if(['pass','move','dribble'].includes(it.type)){let col=it.type==='pass'?'#1769aa':it.type==='move'?'#d69b00':'#16865b';arrow(it.x,it.y,it.x2,it.y2,col,it.type==='pass');if(it.type==='dribble'){ctx.fillStyle=col;ctx.font='bold 20px Arial';ctx.fillText('〰',(it.x+it.x2)/2,(it.y+it.y2)/2-9)}}else if(it.type==='text'){ctx.fillStyle='#172536';ctx.font='bold 21px Arial';ctx.fillText(it.text||'Testo',it.x,it.y)}if(selected===i){ctx.strokeStyle='#ffe500';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(it.x,it.y,30,0,Math.PI*2);ctx.stroke()}ctx.restore()})}
