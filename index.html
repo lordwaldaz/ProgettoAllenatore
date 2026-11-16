@@ -124,15 +124,15 @@ function paintCourt(){
  ctx.fillStyle='#edf1f4';ctx.fillRect(0,0,1000,650);
  const x0=24,xm=500,x1=976,y0=70,y1=580,cy=325,scale=34;
  const wood=ctx.createLinearGradient(0,y0,0,y1);wood.addColorStop(0,'#dcb27e');wood.addColorStop(.5,'#d4a46d');wood.addColorStop(1,'#c9955e');
- function floor(x,w){ctx.fillStyle=wood;ctx.fillRect(x,y0,w,y1-y0);ctx.save();ctx.beginPath();ctx.rect(x,y0,w,y1-y0);ctx.clip();for(let yy=y0+12;yy<y1;yy+=34){ctx.strokeStyle='rgba(111,66, thirty,0.10)'.replace('thirty','30');ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,yy);ctx.lineTo(x+w,yy);ctx.stroke()}for(let xx=x+17;xx<x+w;xx+=68){ctx.strokeStyle='rgba(255,255,255,.10)';ctx.beginPath();ctx.moveTo(xx,y0);ctx.lineTo(xx,y1);ctx.stroke()}ctx.restore()}
+ function floor(x,w){ctx.fillStyle=wood;ctx.fillRect(x,y0,w,y1-y0);ctx.save();ctx.beginPath();ctx.rect(x,y0,w,y1-y0);ctx.clip();for(let yy=y0+12;yy<y1;yy+=34){ctx.strokeStyle='rgba(111,66,30,.10)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,yy);ctx.lineTo(x+w,yy);ctx.stroke()}for(let xx=x+17;xx<x+w;xx+=68){ctx.strokeStyle='rgba(255,255,255,.10)';ctx.beginPath();ctx.moveTo(xx,y0);ctx.lineTo(xx,y1);ctx.stroke()}ctx.restore()}
  function line(color='#fffaf0',width=3){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round'}
  function half(x,dir,withMid){
   const baseline=x, basketX=x+dir*1.575*scale, keyEnd=x+dir*5.8*scale, ftX=keyEnd, hoopR=.225*scale, restricted=1.25*scale, threeR=6.75*scale;
   line();ctx.strokeRect(baseline,y0,dir*14*scale,y1-y0);
   ctx.beginPath();ctx.moveTo(keyEnd,cy-2.45*scale);ctx.lineTo(baseline,cy-2.45*scale);ctx.lineTo(baseline,cy+2.45*scale);ctx.lineTo(keyEnd,cy+2.45*scale);ctx.stroke();
   ctx.beginPath();ctx.arc(ftX,cy,1.8*scale,0,Math.PI*2);ctx.stroke();
-  ctx.beginPath();ctx.arc(basketX,cy,restricted,Math.PI/2,Math.PI*1.5);ctx.stroke();
-  ctx.beginPath();ctx.arc(basketX,cy,threeR,-1.36,1.36);ctx.stroke();
+  ctx.beginPath();ctx.arc(basketX,cy,restricted,dir===1?-Math.PI/2:Math.PI/2,dir===1?Math.PI/2:Math.PI*1.5);ctx.stroke();
+  ctx.beginPath();ctx.arc(basketX,cy,threeR,dir===1?-1.36:Math.PI-1.36,dir===1?1.36:Math.PI+1.36);ctx.stroke();
   const cornerX=basketX+dir*Math.sqrt(threeR*threeR-(7.5*scale-.9*scale)*(7.5*scale-.9*scale));
   ctx.beginPath();ctx.moveTo(baseline, y0+.9*scale);ctx.lineTo(cornerX,y0+.9*scale);ctx.moveTo(baseline,y1-.9*scale);ctx.lineTo(cornerX,y1-.9*scale);ctx.stroke();
   ctx.beginPath();ctx.moveTo(basketX-dir*.38*scale,cy- .9*scale);ctx.lineTo(basketX+dir*.38*scale,cy-.9*scale);ctx.moveTo(basketX-dir*.38*scale,cy+.9*scale);ctx.lineTo(basketX+dir*.38*scale,cy+.9*scale);ctx.stroke();
