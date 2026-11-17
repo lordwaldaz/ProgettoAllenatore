@@ -121,7 +121,7 @@ function duplicateDrawing(){saveCurrent();let d=drills[current].drawings[drawing
 function addDrill(){saveCurrent();drills.push(blank());current=drills.length-1;loadCurrent();markDirty()}
 ['drillName','drillDuration','reps','description'].forEach(id=>$(id).addEventListener('input',()=>{saveCurrent();if(id==='description')updateDescriptionPreview();renderTabs();markDirty()}));
 function formatDescription(command){$('description').focus();document.execCommand(command,false,null);saveCurrent();updateDescriptionPreview();markDirty()}
-$('boldBtn').onclick=()=>formatDescription('bold');$('underlineBtn').onclick=()=>formatDescription('underline');
+$('boldBtn').onmousedown=$('underlineBtn').onmousedown=e=>e.preventDefault();$('boldBtn').onclick=()=>formatDescription('bold');$('underlineBtn').onclick=()=>formatDescription('underline');
 ['date','team','sessionTitle','duration','goal'].forEach(id=>$(id).addEventListener('input',markDirty));
 $('addDrill').onclick=addDrill;
 $('addDrawingBtn').onclick=addDrawing;$('renameDrawingBtn').onclick=renameDrawing;$('duplicateDrawingBtn').onclick=duplicateDrawing;$('deleteDrawingBtn').onclick=deleteDrawing;
